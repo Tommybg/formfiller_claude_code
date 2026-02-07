@@ -1,11 +1,15 @@
-const PROFILE_FIELDS = [
-  "name", "email", "bio", "linkedin", "twitter",
-  "company_name", "one_liner", "description", "traction", "team_size",
-  "writing_sample_1", "writing_sample_2",
-];
-const SETTINGS_FIELDS = ["api_url", "api_key"];
+const SETTINGS_FIELDS = ["api_url"];
+const SAMPLE_FIELDS = ["writing_sample_1", "writing_sample_2"];
 
-// Tab switching
+const DEFAULT_PROFILE = [
+  { key: "name", value: "" },
+  { key: "email", value: "" },
+  { key: "bio", value: "" },
+];
+
+let profileFields = [];
+
+// ─── Tab switching ───
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
@@ -15,18 +19,67 @@ document.querySelectorAll(".tab").forEach((tab) => {
   });
 });
 
-// Load saved data
-chrome.storage.local.get([...PROFILE_FIELDS, ...SETTINGS_FIELDS], (data) => {
-  for (const key of [...PROFILE_FIELDS, ...SETTINGS_FIELDS]) {
+// ─── Render dynamic profile fields ───
+function renderProfileFields() {
+  const container = document.getElementById("profile-fields");
+  container.innerHTML = "";
+
+  profileFields.forEach((field, i) => {
+    const row = document.createElement("div");
+    row.className = "profile-row";
+
+    const keyInput = document.createElement("input");
+    keyInput.type = "text";
+    keyInput.placeholder = "Field name";
+    keyInput.value = field.key;
+    keyInput.className = "profile-key";
+    keyInput.addEventListener("input", (e) => { profileFields[i].key = e.target.value; });
+
+    const valInput = document.createElement("input");
+    valInput.type = "text";
+    valInput.placeholder = "Value";
+    valInput.value = field.value;
+    valInput.className = "profile-value";
+    valInput.addEventListener("input", (e) => { profileFields[i].value = e.target.value; });
+
+    const removeBtn = document.createElement("button");
+    removeBtn.textContent = "\u00d7";
+    removeBtn.className = "remove-btn";
+    removeBtn.addEventListener("click", () => {
+      profileFields.splice(i, 1);
+      renderProfileFields();
+    });
+
+    row.appendChild(keyInput);
+    row.appendChild(valInput);
+    row.appendChild(removeBtn);
+    container.appendChild(row);
+  });
+}
+
+// ─── Add field ───
+document.getElementById("add-field-btn").addEventListener("click", () => {
+  profileFields.push({ key: "", value: "" });
+  renderProfileFields();
+});
+
+// ─── Load saved data ───
+chrome.storage.local.get(["profileFields", ...SAMPLE_FIELDS, ...SETTINGS_FIELDS], (data) => {
+  profileFields = data.profileFields && data.profileFields.length > 0
+    ? data.profileFields
+    : DEFAULT_PROFILE;
+  renderProfileFields();
+
+  for (const key of [...SAMPLE_FIELDS, ...SETTINGS_FIELDS]) {
     const el = document.getElementById(key);
     if (el && data[key]) el.value = data[key];
   }
 });
 
-// Save profile
+// ─── Save profile ───
 document.getElementById("save-btn").addEventListener("click", () => {
-  const data = {};
-  for (const key of [...PROFILE_FIELDS, ...SETTINGS_FIELDS]) {
+  const data = { profileFields };
+  for (const key of [...SAMPLE_FIELDS, ...SETTINGS_FIELDS]) {
     const el = document.getElementById(key);
     if (el) data[key] = el.value;
   }
@@ -35,21 +88,19 @@ document.getElementById("save-btn").addEventListener("click", () => {
   });
 });
 
-// Fill this page
+// ─── Fill this page ───
 document.getElementById("fill-btn").addEventListener("click", async () => {
-  const data = await chrome.storage.local.get([...PROFILE_FIELDS, ...SETTINGS_FIELDS]);
-  const apiUrl = data.api_url;
-  const apiKey = data.api_key;
+  const data = await chrome.storage.local.get(["profileFields", ...SAMPLE_FIELDS, ...SETTINGS_FIELDS]);
+  const apiUrl = data.api_url || "http://localhost:3000";
 
-  if (!apiUrl || !apiKey) {
-    showStatus("Set API URL and Key in Settings first.");
-    return;
-  }
-
+  // Build profile object from key-value pairs
   const profile = {};
-  for (const key of PROFILE_FIELDS) {
-    if (data[key]) profile[key] = data[key];
+  const fields = data.profileFields || profileFields;
+  for (const { key, value } of fields) {
+    if (key && value) profile[key] = value;
   }
+  if (data.writing_sample_1) profile["writing_sample_1"] = data.writing_sample_1;
+  if (data.writing_sample_2) profile["writing_sample_2"] = data.writing_sample_2;
 
   if (Object.keys(profile).length === 0) {
     showStatus("Fill in your profile first.");
@@ -63,12 +114,12 @@ document.getElementById("fill-btn").addEventListener("click", async () => {
   chrome.scripting.executeScript({
     target: { tabId: tab.id },
     func: fillPage,
-    args: [profile, apiUrl, apiKey],
+    args: [profile, apiUrl],
   });
 });
 
-// This function is injected into the page
-function fillPage(profile, apiUrl, apiKey) {
+// ─── Injected function ───
+function fillPage(profile, apiUrl) {
   function detectFormFields() {
     const fields = [];
     const inputs = document.querySelectorAll("input, textarea, select");
@@ -112,7 +163,6 @@ function fillPage(profile, apiUrl, apiKey) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
         },
         body: JSON.stringify({ profile, formFields }),
       });

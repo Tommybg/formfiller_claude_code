@@ -12,26 +12,17 @@
   </header>
 
   <nav class="tabs">
-    <button class="tab active" data-tab="personal">Personal</button>
-    <button class="tab" data-tab="startup">Startup</button>
+    <button class="tab active" data-tab="profile">Profile</button>
     <button class="tab" data-tab="samples">Samples</button>
     <button class="tab" data-tab="settings">Settings</button>
   </nav>
 
-  <div class="tab-content active" id="personal">
-    <label>Full Name<input type="text" id="name" placeholder="Jane Doe" /></label>
-    <label>Email<input type="email" id="email" placeholder="jane@example.com" /></label>
-    <label>Bio<textarea id="bio" rows="3" placeholder="Short bio..."></textarea></label>
-    <label>LinkedIn<input type="url" id="linkedin" placeholder="https://linkedin.com/in/..." /></label>
-    <label>Twitter<input type="text" id="twitter" placeholder="@handle" /></label>
-  </div>
+  <div class="tab-content active" id="profile">
+    <p class="hint">Add any key-value pairs that describe you. The AI uses these to fill forms.</p>
 
-  <div class="tab-content" id="startup">
-    <label>Company Name<input type="text" id="company_name" placeholder="Acme Inc" /></label>
-    <label>One-Liner<input type="text" id="one_liner" placeholder="We do X for Y" /></label>
-    <label>Description<textarea id="description" rows="3" placeholder="What does the company do?"></textarea></label>
-    <label>Traction<input type="text" id="traction" placeholder="$10k MRR, 500 users..." /></label>
-    <label>Team Size<input type="number" id="team_size" placeholder="3" /></label>
+    <div id="profile-fields"></div>
+
+    <button id="add-field-btn" class="add-btn">+ ADD FIELD</button>
   </div>
 
   <div class="tab-content" id="samples">
@@ -41,7 +32,7 @@
 
   <div class="tab-content" id="settings">
     <label>API URL<input type="url" id="api_url" placeholder="https://your-app.vercel.app" /></label>
-    <label>API Key<input type="password" id="api_key" placeholder="Your API secret" /></label>
+    <p class="hint">The URL where your FormFiller app is hosted. Default: http://localhost:3000</p>
   </div>
 
   <div class="actions">

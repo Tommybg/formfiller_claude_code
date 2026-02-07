@@ -5,13 +5,6 @@ import { z } from "zod";
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  const authHeader = req.headers.get("authorization");
-  const expected = process.env.API_SECRET;
-
-  if (!expected || authHeader !== `Bearer ${expected}`) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const { profile, formFields } = await req.json();
 
   const { object } = await generateObject({
